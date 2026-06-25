@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- 移动端自适应核心标签 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metro Central Library - Redesigned Website</title>
+    <style>
+        /* ========== 全局样式变量（匹配方案配色：深蓝 #0F172A / 天蓝 #38BDF8） ========== */
+        :root {
+            --bg-main: #0F172A;
+            --accent: #38BDF8;
+            --text-base: #ffffff;
+            --text-gray: #cbd5e1;
+            --font-base: 18px; /* WCAG 2.1 AA 标准基础字号 */
+            --font-family: system-ui, 'Urbanist', sans-serif;
+            /* 馆藏状态三色 */
+            --status-available: #22c55e;
+            --status-hold: #eab308;
+            --status-out: #64748b;
+        }
+
+        /* 老年高对比度模式切换类 */
+        .high-contrast {
+            --bg-main: #000000;
+            --text-base: #ffffff;
+            --accent: #00ccff;
+        }
+
+        * {
+            font-family: var(--font-family);
+            font-size: var(--font-base);
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-base);
+            line-height: 1.6;
+            padding: 16px;
+        }
+
+        /* 无障碍工具栏 */
+        .access-bar {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 10px;
+        }
+        .access-bar button {
+            padding: 6px 12px;
+            background: var(--accent);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #000;
+        }
+
+        /* 顶部导航 Mega Menu */
+        #mega-menu {
+            display: flex;
+            gap: 24px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        #mega-menu a {
+            color: var(--text-base);
+            text-decoration: none;
+        }
+        #mega-menu a:hover {
+            color: var(--accent);
+        }
+
+        /* 面包屑导航 */
+        #breadcrumb {
+            margin: 10px 0 20px;
+            color: var(--text-gray);
+        }
+        #breadcrumb a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* 首页搜索框 */
+        .search-box {
+            margin: 30px 0;
+        }
+        #smart-search {
+            width: 100%;
+            max-width: 800px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: none;
+            outline: var(--accent) solid 2px;
+        }
+
+        /* 页面主体布局：侧边筛选栏 + 资源列表 */
+        .page-wrap {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 32px;
+        }
+
+        /* 侧边筛选栏 */
+        .sidebar-filter {
+            border: 1px solid var(--text-gray);
+            padding: 16px;
+            border-radius: 8px;
+            height: fit-content;
+        }
+        .sidebar-filter h4 {
+            margin-bottom: 12px;
+            margin-top: 0;
+        }
+        .sidebar-filter label {
+            display: block;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+
+        /* 资源卡片容器 */
+        #resource-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        /* 单本资源卡片 */
+        .resource-card {
+            border: 1px solid var(--text-gray);
+            padding: 16px;
+            border-radius: 8px;
+        }
+        .resource-card h3 {
+            margin-bottom: 8px;
+        }
+        .resource-card p {
+            color: var(--text-gray);
+            margin: 10px 0;
+        }
+
+        /* 馆藏状态标签 */
+        .status-tag {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .status-available { background: var(--status-available); color: #000; }
+        .status-hold { background: var(--status-hold); color: #000; }
+        .status-out { background: var(--status-out); color: #fff; }
+
+        /* 功能按钮 */
+        .btn-action {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 8px;
+            margin-top: 8px;
+        }
+
+        /* 移动端适配：手机隐藏侧边栏，单列布局 */
+        @media screen and (max-width: 768px) {
+            .page-wrap {
+                grid-template-columns: 1fr;
+            }
+            .sidebar-filter {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 无障碍控制区：字体放大缩小、高对比度切换 -->
+    <div class="access-bar">
+        <button id="font-minus">A-</button>
+        <button id="font-plus">A+</button>
+        <button id="contrast-toggle">High Contrast Mode</button>
+    </div>
+
+    <!-- 顶部动态导航菜单（5大分类 Search/Services/Events/Research/About） -->
+    <nav id="mega-menu"></nav>
+
+    <!-- 面包屑导航 -->
+    <div id="breadcrumb"></div>
+
+    <!-- 首页统一智能搜索框（支持自然语言NLP检索） -->
+    <div class="search-box">
+        <input id="smart-search" placeholder="Search books, audiobooks, academic papers, kid events...">
+    </div>
+
+    <!-- 页面主体：筛选侧边栏 + 图书资源列表 -->
+    <div class="page-wrap">
+        <!-- 左侧多维度筛选侧边栏 -->
+        <aside class="sidebar-filter">
+            <h4>Filter Resources</h4>
+            <label>
+                <input type="checkbox" class="filter-check" value="available">
+                Only Available Books
+            </label>
+            <label>
+                <input type="checkbox" class="filter-check" value="audiobook">
+                Audiobook Only
+            </label>
+        </aside>
+
+        <!-- 图书资源展示区域 -->
+        <main>
+            <div id="resource-list"></div>
+        </main>
+    </div>
+
+    <!-- 全局内嵌有声书播放器 -->
+    <audio id="audio-player" controls style="margin-top:30px; width:100%;">
+
+    <script>
+        // ====================== 1. 无障碍功能脚本：字号缩放、高对比度切换 ======================
+        const root = document.documentElement;
+        const fontSizeBtnPlus = document.getElementById('font-plus');
+        const fontSizeBtnMinus = document.getElementById('font-minus');
+        const contrastToggle = document.getElementById('contrast-toggle');
+
+        // 放大字体
+        fontSizeBtnPlus.addEventListener('click', () => {
+            let currentSize = parseFloat(getComputedStyle(root).getPropertyValue('--font-base'));
+            root.style.setProperty('--font-base', `${currentSize + 2}px`);
+        });
+        // 缩小字体
+        fontSizeBtnMinus.addEventListener('click', () => {
+            let currentSize = parseFloat(getComputedStyle(root).getPropertyValue('--font-base'));
+            if (currentSize > 14) {
+                root.style.setProperty('--font-base', `${currentSize - 2}px`);
+            }
+        });
+        // 切换高对比度老年模式
+        contrastToggle.addEventListener('click', () => {
+            document.body.classList.toggle('high-contrast');
+        });
+
+        // ====================== 2. 动态生成顶部导航菜单（5个核心分类） ======================
+        const menuData = [
+            { name: "Search", link: "/search" },
+            { name: "Services", link: "/services" },
+            { name: "Events", link: "/events" },
+            { name: "Research", link: "/research" },
+            { name: "About", link: "/about" }
+        ];
+        function renderMenu() {
+            const menuWrap = document.getElementById('mega-menu');
+            menuWrap.innerHTML = "";
+            menuData.forEach(item => {
+                const aTag = document.createElement('a');
+                aTag.href = item.link;
+                aTag.innerText = item.name;
+                menuWrap.appendChild(aTag);
+            });
+        }
+        renderMenu();
+
+        // ====================== 3. 自动生成面包屑导航 ======================
+        function renderBreadcrumb() {
+            const crumbWrap = document.getElementById('breadcrumb');
+            const pathArr = window.location.pathname.split('/').filter(p => p);
+            let pathUrl = "";
+            let htmlStr = `<a href="/">Home</a>`;
+            pathArr.forEach(path => {
+                pathUrl += `/${path}`;
+                htmlStr += ` / <a href="${pathUrl}">${path}</a>`;
+            });
+            crumbWrap.innerHTML = htmlStr;
+        }
+        renderBreadcrumb();
+
+        // ====================== 4. 模拟图书馆图书数据库（后端数据） ======================
+        const bookDatabase = [
+            {
+                id: 1,
+                title: "Children's Weekly Reading Stories",
+                year: 2024,
+                format: "ebook",
+                status: 0, // 0=可借 1=待预约 2=无货
+                type: "book",
+                audioSrc: ""
+            },
+            {
+                id: 2,
+                title: "Medical Academic Research Papers",
+                year: 2023,
+                format: "database",
+                status: 1,
+                type: "paper",
+                audioSrc: ""
+            },
+            {
+                id: 3,
+                title: "World Classic Novels Audiobook",
+                year: 2022,
+                format: "audiobook",
+                status: 0,
+                type: "audiobook",
+                audioSrc: "https://example.com/audio-demo.mp3"
+            }
+        ];
+
+        // ====================== 5. 简易NLP检索函数（自然语言关键词提取） ======================
+        function searchBooks(query) {
+            if (!query.trim()) return bookDatabase;
+            const input = query.toLowerCase();
+            return bookDatabase.filter(book => {
+                const titleMatch = book.title.toLowerCase().includes(input);
+                const audioMatch = input.includes("audiobook") && book.type === "audiobook";
+                const kidMatch = input.includes("children") && book.title.includes("Children");
+                const researchMatch = input.includes("research") && book.type === "paper";
+                return titleMatch || audioMatch || kidMatch || researchMatch;
+            });
+        }
+
+        // ====================== 6. 渲染图书卡片（动态馆藏状态、按钮） ======================
+        function renderResourceList(bookList) {
+            const listWrap = document.getElementById('resource-list');
+            listWrap.innerHTML = "";
+            bookList.forEach(book => {
+                // 匹配馆藏状态样式与文字
+                let statusClass, statusText;
+                if (book.status === 0) {
+                    statusClass = "status-available";
+                    statusText = "Available";
+                } else if (book.status === 1) {
+                    statusClass = "status-hold";
+                    statusText = "On Hold";
+                } else {
+                    statusClass = "status-out";
+                    statusText = "Out of Stock";
+                }
+                // 单张卡片HTML
+                const card = document.createElement("div");
+                card.className = "resource-card";
+                card.innerHTML = `
+                    <h3>${book.title}</h3>
+                    <span class="status-tag ${statusClass}">${statusText}</span>
+                    <p>Publish Year: ${book.year} | Format: ${book.format}</p>
+                    <button class="btn-action hold-btn" data-book-id="${book.id}">Place Hold</button>
+                    ${book.type === "audiobook" ? `<button class="btn-action audio-btn" data-audio-src="${book.audioSrc}">Play Audio Sample</button>` : ""}
+                `;
+                listWrap.appendChild(card);
+            });
+            bindCardEvent();
+        }
+
+        // ====================== 7. 卡片按钮绑定：预约图书、播放有声书 ======================
+        function bindCardEvent() {
+            // 预约图书按钮
+            document.querySelectorAll(".hold-btn").forEach(btn => {
+                btn.onclick = function () {
+                    const bid = this.dataset.bookId;
+                    alert(`Successfully reserved book ID: ${bid}`);
+                }
+            });
+            // 有声书播放按钮
+            const audioPlayer = document.getElementById("audio-player");
+            document.querySelectorAll(".audio-btn").forEach(btn => {
+                btn.onclick = function () {
+                    audioPlayer.src = this.dataset.audioSrc;
+                    audioPlayer.play();
+                }
+            });
+        }
+
+        // ====================== 8. 搜索框回车检索逻辑 ======================
+        const searchInput = document.getElementById("smart-search");
+        searchInput.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+                const result = searchBooks(this.value);
+                renderResourceList(result);
+            }
+        });
+
+        // ====================== 9. 侧边筛选器切换过滤图书 ======================
+        const filterCheckboxes = document.querySelectorAll(".filter-check");
+        filterCheckboxes.forEach(check => {
+            check.addEventListener("change", function () {
+                let filterData = [...bookDatabase];
+                filterCheckboxes.forEach(cb => {
+                    if (cb.checked) {
+                        if (cb.value === "available") {
+                            filterData = filterData.filter(item => item.status === 0);
+                        }
+                        if (cb.value === "audiobook") {
+                            filterData = filterData.filter(item => item.type === "audiobook");
+                        }
+                    }
+                });
+                renderResourceList(filterData);
+            })
+        });
+
+        // 页面加载默认渲染全部图书
+        renderResourceList(bookDatabase);
+    </script>
+</body>
+</html>
